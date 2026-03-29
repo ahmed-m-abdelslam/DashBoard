@@ -17,12 +17,12 @@ def _make_single_card(data, pc_idx, ai_summary=""):
     rc = risk_color(risk_score)
     uc = urgency_color(data.get("urgency_category", "TBD"))
 
-    # Gauge with better styling
+    # Gauge
     gauge = go.Figure(go.Indicator(
         mode="gauge+number", value=round(overall, 1),
         number={"suffix": "%", "font": {"size": 32, "color": pc["main"], "family": "Inter", "weight": 800}},
         gauge={
-            "axis": {"range": [0, 100], "tickfont": {"size": 9, "color": "#94a3b8"}, "dtick": 25, "tickcolor": "rgba(0,0,0,0.05)"},
+            "axis": {"range": [0, 100], "tickfont": {"size": 9, "color": "#94a3b8"}, "dtick": 25},
             "bar": {"color": oc, "thickness": 0.75},
             "bgcolor": "rgba(241,245,249,0.5)", "borderwidth": 0,
             "steps": [
@@ -34,7 +34,7 @@ def _make_single_card(data, pc_idx, ai_summary=""):
     ))
     gauge.update_layout(height=135, margin=dict(t=10, b=0, l=18, r=18), paper_bgcolor="rgba(0,0,0,0)")
 
-    # Waterfall with better colors
+    # Waterfall
     ordered = data["orders_placed"]
     in_prog = data["orders_in_progress"]
     remaining = max(0, budget - ordered - in_prog)
@@ -62,7 +62,6 @@ def _make_single_card(data, pc_idx, ai_summary=""):
     sav_color = THEME["success"] if sav >= 0 else THEME["danger"]
     proc_started = data.get("proc_started", "").lower() == "yes"
     del_started = data.get("delivery_started", "").lower() == "yes"
-
     cat_badges = [concern_badge(cat) for cat in data.get("concern_categories", [])]
 
     def section_label(text):
@@ -73,7 +72,9 @@ def _make_single_card(data, pc_idx, ai_summary=""):
         })
 
     return html.Div([
-        # Header with gradient
+        # ══════════════════════════════════════
+        # HEADER
+        # ══════════════════════════════════════
         html.Div([
             html.Div([
                 html.H3(name, style={
@@ -109,7 +110,9 @@ def _make_single_card(data, pc_idx, ai_summary=""):
             "position": "relative", "overflow": "hidden",
         }),
 
-        # Body
+        # ══════════════════════════════════════
+        # BODY
+        # ══════════════════════════════════════
         html.Div([
             # Status badges
             html.Div([
@@ -216,6 +219,7 @@ def _make_single_card(data, pc_idx, ai_summary=""):
             html.Div(cat_badges, style={
                 "display": "flex", "gap": "5px", "flexWrap": "wrap", "marginBottom": "10px",
             }) if cat_badges else html.Div(),
+
             html.Div([
                 html.Div(c, className="concern-item", style={
                     "padding": "10px 14px",
@@ -234,7 +238,9 @@ def _make_single_card(data, pc_idx, ai_summary=""):
                 "fontWeight": "600",
             }),
 
-            # AI Summary
+            # ══════════════════════════════════════
+            # AI SUMMARY — هنا بالظبط التعديل
+            # ══════════════════════════════════════
             html.Div([
                 html.H4("AI Analysis", style={
                     "fontSize": FONT["sm"], "color": THEME["text"],
@@ -246,17 +252,25 @@ def _make_single_card(data, pc_idx, ai_summary=""):
                         "background": "linear-gradient(90deg, #6366f1, #8b5cf6, transparent)",
                         "borderRadius": "2px", "marginBottom": "12px",
                     }),
-                    html.Div(ai_summary, style={
-                        "fontSize": FONT["sm"], "color": "#3730a3",
-                        "lineHeight": "1.7",
-                    }),
+                    html.Div(
+                        ai_summary if ai_summary else "See AI Insights section below ↓",
+                        style={
+                            "fontSize": FONT["sm"],
+                            "color": "#3730a3" if ai_summary else THEME["text_muted"],
+                            "lineHeight": "1.7",
+                            "fontStyle": "normal" if ai_summary else "italic",
+                        },
+                    ),
                 ], style={
                     "backgroundColor": "rgba(238,242,255,0.6)",
                     "padding": "14px 16px", "borderRadius": "12px",
                     "border": "1px solid rgba(99,102,241,0.1)",
                 }),
             ]),
-        ], style={"padding": "18px 22px"}),
+            # ══════════════════════════════════════
+
+        ], style={"padding": "18px 22px"}),  # ← إغلاق الـ BODY div
+
     ], className="project-card", style=glass_card({
         "overflow": "hidden", "flex": "1",
         "minWidth": "400px", "maxWidth": "560px",
@@ -264,13 +278,23 @@ def _make_single_card(data, pc_idx, ai_summary=""):
     }))
 
 
+# ══════════════════════════════════════════════════
+# الدوال الجديدة للـ Placeholder (بدون AI)
+# ══════════════════════════════════════════════════
+
+def _make_card_without_ai(data, pc_idx):
+    """Same card but without AI summary — shows placeholder text."""
+    return _make_single_card(data, pc_idx, ai_summary="")
+
+
 def make_project_cards_section(all_data, ai_summaries=None):
+    """Full version with AI summaries (used if AI is pre-loaded)."""
     if ai_summaries is None:
         ai_summaries = {}
 
     cards = []
     for i, d in enumerate(all_data):
-        summary = ai_summaries.get(d["project_name"], "AI summary not available.")
+        summary = ai_summaries.get(d["project_name"], "")
         cards.append(_make_single_card(d, i, summary))
 
     return html.Div([
@@ -279,7 +303,6 @@ def make_project_cards_section(all_data, ai_summaries=None):
                 "fontSize": FONT["lg"], "color": THEME["text"], "fontWeight": "800",
                 "margin": "0 0 20px 0", "paddingBottom": "12px",
                 "borderBottom": f"2px solid {THEME['border']}",
-                "letterSpacing": "-0.3px",
             }),
         ], style={"padding": "0 20px"}),
         html.Div(cards, style={
@@ -287,4 +310,70 @@ def make_project_cards_section(all_data, ai_summaries=None):
             "alignItems": "flex-start", "gap": "20px",
             "flexWrap": "wrap", "padding": "0 20px 40px 20px",
         }),
+    ])
+
+
+def make_project_cards_section_placeholder(all_data):
+    """Fast version — cards without AI, AI loads separately below."""
+    cards = []
+    for i, d in enumerate(all_data):
+        cards.append(_make_card_without_ai(d, i))
+
+    return html.Div([
+        # Project cards (instant)
+        html.Div([
+            html.H2("Project Detail Cards", className="section-title", style={
+                "fontSize": FONT["lg"], "color": THEME["text"], "fontWeight": "800",
+                "margin": "0 0 20px 0", "paddingBottom": "12px",
+                "borderBottom": f"2px solid {THEME['border']}",
+            }),
+        ], style={"padding": "0 20px"}),
+
+        html.Div(cards, style={
+            "display": "flex", "justifyContent": "center",
+            "alignItems": "flex-start", "gap": "20px",
+            "flexWrap": "wrap", "padding": "0 20px 20px 20px",
+        }),
+
+        # AI Insights section (loads async via callback)
+        html.Div([
+            html.H2("AI Project Insights", className="section-title", style={
+                "fontSize": FONT["lg"], "color": THEME["text"], "fontWeight": "800",
+                "margin": "0 0 20px 0", "paddingBottom": "12px",
+                "borderBottom": f"2px solid {THEME['border']}",
+            }),
+            html.Div(
+                id="ai-cards-container",
+                children=[
+                    html.Div([
+                        # Shimmer loading skeleton
+                        html.Div(style={
+                            "height": "12px", "width": "60%",
+                            "background": "linear-gradient(90deg, rgba(99,102,241,0.05), rgba(99,102,241,0.12), rgba(99,102,241,0.05))",
+                            "backgroundSize": "200% 100%",
+                            "animation": "shimmer 1.5s ease-in-out infinite",
+                            "borderRadius": "6px", "marginBottom": "10px",
+                        }),
+                        html.Div(style={
+                            "height": "12px", "width": "80%",
+                            "background": "linear-gradient(90deg, rgba(99,102,241,0.04), rgba(99,102,241,0.10), rgba(99,102,241,0.04))",
+                            "backgroundSize": "200% 100%",
+                            "animation": "shimmer 1.5s ease-in-out infinite 0.3s",
+                            "borderRadius": "6px", "marginBottom": "10px",
+                        }),
+                        html.Div(style={
+                            "height": "12px", "width": "45%",
+                            "background": "linear-gradient(90deg, rgba(99,102,241,0.03), rgba(99,102,241,0.08), rgba(99,102,241,0.03))",
+                            "backgroundSize": "200% 100%",
+                            "animation": "shimmer 1.5s ease-in-out infinite 0.6s",
+                            "borderRadius": "6px",
+                        }),
+                        html.P("🔄 Generating AI insights for each project...", style={
+                            "color": THEME["text_muted"], "fontSize": FONT["xs"],
+                            "fontWeight": "500", "marginTop": "14px",
+                        }),
+                    ], style={"minHeight": "80px"}),
+                ],
+            ),
+        ], style={"padding": "0 20px 40px 20px"}),
     ])
