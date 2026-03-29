@@ -1,10 +1,11 @@
+import os
 import dash
 from dash import dcc, html
 from threading import Timer
 import subprocess
 import platform
 
-from config import APP_PORT, APP_HOST, APP_DEBUG, THEME
+from config import APP_HOST, APP_DEBUG, THEME
 from components.upload import make_upload_section
 from components.topbar import make_topbar
 from callbacks.upload_callback import register_upload_callback
@@ -80,6 +81,13 @@ def create_app():
     return app
 
 
+# ═══════════════════════════════════════════════
+# هذا الجزء هو المهم للنشر
+# ═══════════════════════════════════════════════
+app = create_app()
+server = app.server  # ← Railway/Gunicorn محتاج ده
+
+
 def open_browser(url):
     try:
         system = platform.system().lower()
@@ -99,10 +107,17 @@ def open_browser(url):
 
 
 if __name__ == "__main__":
-    app = create_app()
-    url = f"http://{APP_HOST}:{APP_PORT}"
-    print(f"\n{'='*50}")
-    print(f"  Dashboard: {url}")
-    print(f"{'='*50}\n")
-    Timer(2.0, open_browser, args=[url]).start()
-    app.run(debug=APP_DEBUG, port=APP_PORT, host=APP_HOST)
+    port = int(os.environ.get("PORT", 8050))
+    debug = os.environ.get("DEBUG", "false").lower() == "true"
+
+    if debug:
+        url = f"http://127.0.0.1:{port}"
+        print(f"\n{'='*50}")
+        print(f"  Dashboard: {url}")
+        print(f"{'='*50}\n")
+        Timer(2.0, open_browser, args=[url]).start()
+        app.run(debug=True, port=port, host="0.0.0.0")
+    else:
+        # Production mode - gunicorn handles this
+        print(f"Starting production server on port {port}")
+        app.run(debug=False, port=port, host="0.0.0.0")

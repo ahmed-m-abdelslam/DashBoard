@@ -10,14 +10,14 @@ AI_TEMPERATURE = 0.3
 AI_TIMEOUT = 15
 
 # App
-APP_PORT = 8050
-APP_HOST = "127.0.0.1"
-APP_DEBUG = False
+APP_PORT = int(os.getenv("PORT", 8050))
+APP_HOST = "0.0.0.0"
+APP_DEBUG = os.getenv("DEBUG", "false").lower() == "true"
 MAX_FILE_SIZE_MB = 10
 MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024
 SUPPORTED_EXTENSIONS = {"xlsx", "xlsm", "xls", "csv"}
 
-# Theme
+# باقي الكود زي ما هو بالظبط...
 THEME = {
     "bg": "#f8fafc",
     "card_bg": "#ffffff",
